@@ -416,6 +416,29 @@ ${product.compatibilityTable
 </div>
 <!-- COMPATIBILITY TABLE END -->
 
+<!-- START DISCLAIMER -->
+<div class="product-text">
+<div class="container">
+<div class="desc_box">
+<div class="desc-hedtitle">Disclaimer</div>
+<div class="pro-and-about">
+<div class="listing_listingarea-box" id="right_box">
+<div class="desc-rd desc-text">
+<div vocab="https://schema.org/" typeof="Product">
+<span property="description">
+
+<p>Trademark Disclaimer: All trademarks, brand names, and logos (e.g., "Honda") remain the property of their respective owners and are used solely for identification and compatibility purposes. We are an independent retailer and are not affiliated with "Honda Motor Co.,Ltd., nor are we an authorized dealer or distributor.<br></p>
+
+</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- DISCLAIMER END -->
+
 <!-- OFFER START -->
 <div class="offer_wrapper">
 <div class="container">
