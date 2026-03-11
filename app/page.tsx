@@ -295,7 +295,7 @@ ${product.productTitle}
 <div class="container">
 <div class="desc_box">
 
-<div class="desc-hedtitle">🔋 Product Description</div>
+<div class="desc-hedtitle">Product Description</div>
 
 <div class="pro-and-about">
 <div class="listing_listingarea-box" id="right_box">
@@ -303,7 +303,7 @@ ${product.productTitle}
 
 <div vocab="https://schema.org/" typeof="Product">
 <h2 class="perfect_for_title">
-ℹ️ Overview
+Overview
 </h2>
 <div class="perfect_for_divider"></div>
 <span property="description">
@@ -325,7 +325,7 @@ ${product.productTitle}
 <div class="container">
 <div class="desc_box">
 
-<div class="desc-hedtitle">⭐ Specifications</div>
+<div class="desc-hedtitle">Specifications</div>
 
 <div class="pro-and-about">
 <div class="listing_listingarea-box" id="right_box">
@@ -695,56 +695,6 @@ ${product.compatibilityTable
 </div>
 </div>
 <!-- ------------ feedback END ------------ -->
-
-<!-- NEED ASSISTANCE START -->
-<div class="support_section">
-
-<div class="offer_main_title">
-<h6>Need Assistance?</h6>
-</div>
-
-<div class="support_items">
-
-<div class="support_card">
-
-<div class="support_icon">
-<a href="https://parthive.co.uk" target="_blank">
-<img src="https://wgnpspquzheta2n4.public.blob.vercel-storage.com/website_logo.png">
-</a>
-</div>
-
-<div class="support_title">
-VISIT OUR WEBSITE
-</div>
-
-<div class="support_text">
-Browse more motorcycle parts and exclusive deals on our official store.
-</div>
-
-</div>
-
-
-<div class="support_card">
-
-<div class="support_icon">
-<a href="https://wa.me/447979057020" target="_blank">
-<img src="https://wgnpspquzheta2n4.public.blob.vercel-storage.com/whatsapp_logo.png" style="border-radius:12px;">
-</a>
-</div>
-
-<div class="support_title">
-CHAT ON WHATSAPP
-</div>
-
-<div class="support_text">
-Need help with compatibility or parts? Message us directly for quick support.
-</div>
-
-</div>
-
-</div>
-</div>
-<!-- NEED ASSISTANCE END -->
 
 <!-- ------------ footer ------------ -->
 <footer>
