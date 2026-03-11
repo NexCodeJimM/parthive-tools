@@ -332,6 +332,12 @@ Overview
 <div class="desc-rd desc-text">
 
 <!-- KEY FEATURES BULLETS -->
+<h2 class="perfect_for_title">
+Key Features
+</h2>
+
+<div class="perfect_for_divider"></div>
+
 <ul class="key_features_list">
 ${product.keyFeatures.map((feature) => `<li>${feature}</li>`).join("")}
 </ul>
