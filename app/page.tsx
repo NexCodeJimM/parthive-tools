@@ -377,7 +377,9 @@ ${product.perfectFor.map((item) => `<li>${item}</li>`).join("")}
 <div vocab="https://schema.org/" typeof="Product">
 <span property="description">
 
-<table style="width:100%; border-collapse: collapse; margin-bottom: 10px;">
+<span style="color:#5A5A5A; font-size: 14px;">Please compare your existing part number and model details carefully before purchasing to ensure correct compatibility.</span>
+
+<table style="width:100%; border-collapse: collapse; margin-top: 10px;">
 <thead>
 <tr>
 <th style="border:1px solid #ddd; padding:8px; text-align:left;">Make</th>
@@ -407,8 +409,6 @@ ${product.compatibilityTable
 </table>
 
 </span>
-
-<span style="color:#5A5A5A; font-size: 14px;">*Please compare your existing part number and model details carefully before purchasing to ensure correct compatibility.</span>
 
 </div>
 </div>
