@@ -386,8 +386,8 @@ ${product.perfectFor.map((item) => `<li>${item}</li>`).join("")}
 <th style="border:1px solid #ddd; padding:8px; text-align:left;">Model</th>
 <th style="border:1px solid #ddd; padding:8px; text-align:left;">Year</th>
 <th style="border:1px solid #ddd; padding:8px; text-align:left;">CCM</th>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">Submodels</th>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">StreetName</th>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">Submodel</th>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">Street Name</th>
 </tr>
 </thead>
 
@@ -900,12 +900,12 @@ ${product.compatibilityTable
                 </FieldLabel>
                 <FieldDescription>
                   Enter compatibility table data as Make, Model, Year, CCM,
-                  Submodels, Streetname
+                  Submodel, Street Name
                 </FieldDescription>
                 <Textarea
                   id="compatibilityTable"
                   {...register("compatibilityTable")}
-                  placeholder="Make, Model, Year, CCM, Submodels, Streetname"
+                  placeholder="Make, Model, Year, CCM, Submodel, Street Name"
                   required
                 />
               </Field>
