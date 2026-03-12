@@ -377,7 +377,7 @@ ${product.perfectFor.map((item) => `<li>${item}</li>`).join("")}
 <div vocab="https://schema.org/" typeof="Product">
 <span property="description">
 
-<table style="width:100%; border-collapse: collapse;">
+<table style="width:100%; border-collapse: collapse; margin-bottom: 10px;">
 <thead>
 <tr>
 <th style="border:1px solid #ddd; padding:8px; text-align:left;">Make</th>
@@ -407,6 +407,9 @@ ${product.compatibilityTable
 </table>
 
 </span>
+
+<span style="color:#5A5A5A; font-size: 14px;">*Please compare your existing part number and model details carefully before purchasing to ensure correct compatibility.</span>
+
 </div>
 </div>
 </div>
@@ -427,7 +430,7 @@ ${product.compatibilityTable
 <div vocab="https://schema.org/" typeof="Product">
 <span property="description">
 
-<p>Trademark Disclaimer: All trademarks, brand names, and logos (e.g., "Honda") remain the property of their respective owners and are used solely for identification and compatibility purposes. We are an independent retailer and are not affiliated with "Honda Motor Co.,Ltd., nor are we an authorized dealer or distributor.<br></p>
+<p>Trademark Disclaimer: All trademarks, brand names, and logos are the property of their respective owners and are used strictly for identification and compatibility purposes only. We are an independent retailer and are not affiliated with, endorsed by, or authorised by any original equipment manufacturer or brand owner.<br></p>
 
 </span>
 </div>
