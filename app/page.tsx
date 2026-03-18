@@ -630,8 +630,10 @@ ${product.compatibilityTable
 <div class="col-lg-6">
 <div class="about_content">
 <h6>About Part Hive</h6>
-<p>Part Hive is a family-run business with decades of expertise in motorbike parts and repairs. What started in 1999 as a small mobile repair service by the founder of Ben Scooter Ltd, has grown into a trusted name in the industry, supplying high-quality motorcycle and scooter parts worldwide.</p>
-<p>At Part Hive, we are not just selling parts?we're fuelling a legacy. Whether you're a mechanic, a delivery driver, or a passionate rider, you are part of something bigger. A hive of innovation, reliability, and exceptional service. Backed by years of hands-on experience, we ensure every product meets the highest standards.From humble beginnings to a thriving platform, the journey continues.Welcome to the Hive.</p>
+<p>Part Hive is a family-led business with over 30 years of hands-on experience in the motorcycle and scooter industry. Built by mechanics, engineers, and riders, our foundation comes from real workshop knowledge and a deep understanding of quality, performance, and reliability.</p>
+<p>Today, our focus goes beyond maintaining bikes. We believe every component matters. Every bolt, every mechanism, and every moving part is refined with precision, care, and true engineering understanding.</p>
+<p>We take great pride in our eBay store and are committed to delivering outstanding service, honest quality, and dependable parts to every customer. Through modern logistics and online sales, Part Hive proudly serves riders across countries and continents, helping bring the global riding community closer together.</p>
+<p><b>Quality parts. Trusted experience. Powered by Part Hive.</b></p>
 <div class="browse_all_btn about"><a class="button" href="https://www.ebay.co.uk/str/parthive" target="_blank">Visit Our Store <i class="fa-solid fa-chevron-right"></i></a></div>
 </div>
 </div>
