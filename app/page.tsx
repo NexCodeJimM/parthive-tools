@@ -145,7 +145,7 @@ export default function Home() {
 <meta name="keywords" content="${product.productTitle}">
 <link rel="stylesheet" href="https://dezignbrain.com/ebay/part_hive/listing/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://dezignbrain.com/ebay/part_hive/listing/css/listing.css">
-<link rel="stylesheet" href="https://wgnpspquzheta2n4.public.blob.vercel-storage.com/part-hive/ebay/bootstrap/custom-parthive-new5.css">
+<link rel="stylesheet" href="https://wgnpspquzheta2n4.public.blob.vercel-storage.com/part-hive/ebay/bootstrap/custom-parthive-new6.css">
 <link href="https://fonts.cdnfonts.com/css/gobold" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
@@ -669,9 +669,13 @@ ${product.compatibilityTable
 </section>
 <section id="content5">
 <p>At Part Hive, we are committed to ensuring every item we dispatch meets our quality standards.</p>
-<p>? All products are subject to a thorough quality control inspection before shipping.</p>
-<p>? Sealed items may be opened to check for any damage or discrepancies prior to dispatch.</p>
-<p>? This process helps us ensure that each customer receives the correct item in excellent condition.</p>
+
+<ul class="tab_bullet_list">
+<li>All products are subject to a thorough quality control inspection before shipping.</li>
+<li>Sealed items may be opened to check for any damage or discrepancies prior to dispatch.</li>
+<li>This process helps us ensure that each customer receives the correct item in excellent condition.</li>
+</ul>
+
 <p>We carry out these checks to maintain high service standards and provide peace of mind to our customers.</p>
 </section>
 </div>
