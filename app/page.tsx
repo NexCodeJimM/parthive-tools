@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,9 +23,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { CircleCheckIcon, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface CompatibilityTableRow {
@@ -36,7 +42,7 @@ interface FormData {
   productOverview: string;
   keyFeatures: string[];
   perfectFor: string[];
-  compatibilityTable: string;
+  compatibilityTable?: string;
 }
 
 interface Product {
@@ -48,7 +54,7 @@ interface Product {
 }
 
 export default function Home() {
-  const { register, handleSubmit } = useForm<FormData>();
+  const { register, handleSubmit, setValue } = useForm<FormData>();
   const [product, setProduct] = useState<Product>({
     productTitle: "",
     productOverview: "",
@@ -59,6 +65,8 @@ export default function Home() {
 
   const [loading, setLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
+  const [showCompatibilityTableForm, setShowCompatibilityTableForm] =
+    useState(false);
 
   // States to manage dynamic input boxes
   const [keyFeaturesList, setKeyFeaturesList] = useState<string[]>([""]);
@@ -72,41 +80,53 @@ export default function Home() {
     const perfectFor = perfectForList.filter(Boolean);
 
     // Format the compatibility table data
-    const compatibilityTable = data.compatibilityTable
+    const compatibilityRows = (data.compatibilityTable ?? "")
       .split("\n")
-      .map((row) => {
-        const [make, model, year, ccm, submodels, streetname] = row.split(",");
+      .map((row) => row.trim())
+      .filter(Boolean);
 
-        // Check if the year is a range (e.g., 2015-2020)
-        const years = year.split("-").map(Number);
-        if (years.length === 2 && years[0] <= years[1]) {
-          const rangeYears = [];
-          for (let i = years[0]; i <= years[1]; i++) {
-            rangeYears.push(i.toString());
-          }
-          return rangeYears.map((singleYear) => ({
-            make,
-            model,
-            year: singleYear,
-            ccm,
-            submodels,
-            streetname,
-          }));
-        } else {
-          // If no year range, return a single entry
-          return [{ make, model, year, ccm, submodels, streetname }];
+    const compatibilityTable = compatibilityRows.flatMap((row) => {
+      const [make, model, year, ccm, submodels, streetname] = row
+        .split(",")
+        .map((value) => value?.trim() ?? "");
+
+      // Ignore malformed rows when optional table is enabled but left partial.
+      if (!make && !model && !year && !ccm && !submodels && !streetname) {
+        return [];
+      }
+
+      // Check if the year is a range (e.g., 2015-2020)
+      const years = year.split("-").map(Number);
+      if (
+        years.length === 2 &&
+        Number.isFinite(years[0]) &&
+        Number.isFinite(years[1]) &&
+        years[0] <= years[1]
+      ) {
+        const rangeYears = [];
+        for (let i = years[0]; i <= years[1]; i++) {
+          rangeYears.push(i.toString());
         }
-      });
+        return rangeYears.map((singleYear) => ({
+          make,
+          model,
+          year: singleYear,
+          ccm,
+          submodels,
+          streetname,
+        }));
+      }
 
-    // Flatten the array if it's an array of arrays (in case of year range)
-    const flattenedTable = compatibilityTable.flat();
+      // If no year range, return a single entry.
+      return [{ make, model, year, ccm, submodels, streetname }];
+    });
 
     setProduct({
       productTitle: data.productTitle,
       productOverview: data.productOverview,
       keyFeatures,
       perfectFor,
-      compatibilityTable: flattenedTable,
+      compatibilityTable,
     });
 
     setLoading(false);
@@ -135,8 +155,71 @@ export default function Home() {
     setPerfectForList(updatedPerfectFor);
   };
 
+  const removeCompatibilityTable = () => {
+    setValue("compatibilityTable", "");
+    setShowCompatibilityTableForm(false);
+    setProduct((prev) => ({ ...prev, compatibilityTable: [] }));
+  };
+
   // Function to generate the HTML snippet
   const generateHTMLSnippet = () => {
+    const compatibilityTableSection =
+      product.compatibilityTable.length > 0
+        ? `
+<!-- START COMPATIBILITY TABLE -->
+<div class="product-text">
+<div class="container">
+<div class="desc_box">
+<div class="desc-hedtitle">Compatibility Table</div>
+<div class="pro-and-about">
+<div class="listing_listingarea-box" id="right_box">
+<div class="desc-rd desc-text">
+<div vocab="https://schema.org/" typeof="Product">
+<span property="description">
+
+<span style="color:#5A5A5A; font-size: 14px;">Please compare your existing part number and model details carefully before purchasing to ensure correct compatibility.</span>
+
+<table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+<thead>
+<tr>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">Make</th>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">Model</th>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">Year</th>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">CCM</th>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">Submodel</th>
+<th style="border:1px solid #ddd; padding:8px; text-align:left;">Street Name</th>
+</tr>
+</thead>
+
+<tbody>
+${product.compatibilityTable
+  .map(
+    (entry) => `<tr>
+		<td style="border:1px solid #ddd; padding:8px;">${entry.make}</td>
+		<td style="border:1px solid #ddd; padding:8px;">${entry.model}</td>
+		<td style="border:1px solid #ddd; padding:8px;">${entry.year}</td>
+		<td style="border:1px solid #ddd; padding:8px;">${entry.ccm}</td>
+		<td style="border:1px solid #ddd; padding:8px;">${entry.submodels}</td>
+		<td style="border:1px solid #ddd; padding:8px;">${entry.streetname}</td>
+	  </tr>`,
+  )
+  .join("")}
+</tbody>
+
+</table>
+
+</span>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- COMPATIBILITY TABLE END -->`
+        : "";
+
     const template = `
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -366,58 +449,7 @@ ${product.perfectFor.map((item) => `<li>${item}</li>`).join("")}
 </div>
 <!-- END KEY FEATURES -->
 
-<!-- START COMPATIBILITY TABLE -->
-<div class="product-text">
-<div class="container">
-<div class="desc_box">
-<div class="desc-hedtitle">Compatibility Table</div>
-<div class="pro-and-about">
-<div class="listing_listingarea-box" id="right_box">
-<div class="desc-rd desc-text">
-<div vocab="https://schema.org/" typeof="Product">
-<span property="description">
-
-<span style="color:#5A5A5A; font-size: 14px;">Please compare your existing part number and model details carefully before purchasing to ensure correct compatibility.</span>
-
-<table style="width:100%; border-collapse: collapse; margin-top: 10px;">
-<thead>
-<tr>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">Make</th>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">Model</th>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">Year</th>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">CCM</th>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">Submodel</th>
-<th style="border:1px solid #ddd; padding:8px; text-align:left;">Street Name</th>
-</tr>
-</thead>
-
-<tbody>
-${product.compatibilityTable
-  .map(
-    (entry) => `<tr>
-		<td style="border:1px solid #ddd; padding:8px;">${entry.make}</td>
-		<td style="border:1px solid #ddd; padding:8px;">${entry.model}</td>
-		<td style="border:1px solid #ddd; padding:8px;">${entry.year}</td>
-		<td style="border:1px solid #ddd; padding:8px;">${entry.ccm}</td>
-		<td style="border:1px solid #ddd; padding:8px;">${entry.submodels}</td>
-		<td style="border:1px solid #ddd; padding:8px;">${entry.streetname}</td>
-	  </tr>`,
-  )
-  .join("")}
-</tbody>
-
-</table>
-
-</span>
-
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- COMPATIBILITY TABLE END -->
+${compatibilityTableSection}
 
 <!-- START DISCLAIMER -->
 <div class="product-text">
@@ -792,163 +824,317 @@ ${product.compatibilityTable
   const copyToClipboard = () => {
     const snippet = generateHTMLSnippet();
     navigator.clipboard.writeText(snippet).then(() => {
-      // Instead of the default alert(), we now use Sonner's toast for notification
-      toast.success("HTML Snippet copied to clipboard!");
+      toast.success("HTML Snippet copied to clipboard!", {
+        position: "bottom-right",
+        icon: (
+          <CircleCheckIcon className="size-5 shrink-0 text-white" aria-hidden />
+        ),
+        style: {
+          background: "rgb(22 163 74)",
+          color: "rgb(255 255 255)",
+          border: "1px solid rgb(21 128 61)",
+        },
+      });
     });
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-semibold text-center mb-8">
-        eBay Description Generator
-      </h1>
-      <div className="flex justify-center">
-        <Card className="w-full max-w-lg">
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <Field className="flex flex-col mb-1">
-                <FieldLabel htmlFor="productTitle">Product Title:</FieldLabel>
-                <Input
-                  id="productTitle"
-                  type="text"
-                  {...register("productTitle")}
-                  required
-                />
-              </Field>
+    <main className="min-h-[calc(100vh-3.5rem)] bg-linear-to-b from-muted/50 via-background to-background">
+      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
+        <Card className="border-border/80 shadow-md shadow-black/5 dark:shadow-black/20">
+          <CardHeader className="space-y-2 border-b border-border/60 pb-6">
+            <CardTitle className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Description generator
+            </CardTitle>
+            <CardDescription className="text-pretty text-base leading-relaxed">
+              Create a Part Hive eBay listing HTML snippet from your product
+              details. Required fields are marked. Generate, then copy the
+              output into your listing.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-8">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-10"
+            >
+              <section className="space-y-5">
+                <div>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                    Product details
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Core copy used in the listing title and overview.
+                  </p>
+                </div>
+                <Field className="flex flex-col gap-2">
+                  <FieldLabel htmlFor="productTitle">
+                    Product title <span className="text-destructive">*</span>
+                  </FieldLabel>
+                  <Input
+                    id="productTitle"
+                    type="text"
+                    placeholder="e.g. OEM brake pads — fits listed models"
+                    {...register("productTitle")}
+                    required
+                  />
+                </Field>
 
-              <Field className="flex flex-col mb-1">
-                <FieldLabel htmlFor="productOverview">
-                  Product Overview:
-                </FieldLabel>
-                <Textarea
-                  id="productOverview"
-                  {...register("productOverview")}
-                  required
-                />
-              </Field>
+                <Field className="flex flex-col gap-2">
+                  <FieldLabel htmlFor="productOverview">
+                    Product overview <span className="text-destructive">*</span>
+                  </FieldLabel>
+                  <Textarea
+                    id="productOverview"
+                    placeholder="Short description for the listing body…"
+                    rows={5}
+                    className="min-h-[120px] resize-y"
+                    {...register("productOverview")}
+                    required
+                  />
+                </Field>
+              </section>
 
-              {/* Key Features - Dynamic Input Boxes */}
-              <Field className="flex flex-col mb-1">
-                <FieldLabel htmlFor="keyFeatures">Key Features:</FieldLabel>
-                {keyFeaturesList.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      type="text"
-                      value={feature}
-                      onChange={(e) => {
-                        const updatedFeatures = [...keyFeaturesList];
-                        updatedFeatures[index] = e.target.value;
-                        setKeyFeaturesList(updatedFeatures);
-                      }}
-                    />
-                    {keyFeaturesList.length > 1 && (
-                      <Button
-                        type="button"
-                        onClick={() => deleteKeyFeature(index)}
-                        variant="destructive"
-                        className="cursor-pointer hover:bg-red-700"
-                      >
-                        x
-                      </Button>
-                    )}
+              <Separator />
+
+              <section className="space-y-5">
+                <div>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                    Specifications
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Bullet lists appear under Key features and Perfect for.
+                  </p>
+                </div>
+
+                <Field className="flex flex-col gap-3">
+                  <FieldLabel>Key features</FieldLabel>
+                  <div className="flex flex-col gap-2">
+                    {keyFeaturesList.map((feature, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder={`Feature ${index + 1}`}
+                          value={feature}
+                          onChange={(e) => {
+                            const updatedFeatures = [...keyFeaturesList];
+                            updatedFeatures[index] = e.target.value;
+                            setKeyFeaturesList(updatedFeatures);
+                          }}
+                          className="flex-1"
+                        />
+                        {keyFeaturesList.length > 1 ? (
+                          <Button
+                            type="button"
+                            onClick={() => deleteKeyFeature(index)}
+                            variant="ghost"
+                            size="icon-sm"
+                            className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            aria-label={`Remove feature ${index + 1}`}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        ) : (
+                          <div
+                            className="size-8 shrink-0 sm:size-9"
+                            aria-hidden
+                          />
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  onClick={addKeyFeature}
-                  className="bg-green-500 hover:bg-green-600 hover:cursor-pointer text-white"
-                  size="xs"
-                >
-                  + Add More
-                </Button>
-              </Field>
-
-              {/* Perfect For - Dynamic Input Boxes */}
-              <Field className="flex flex-col mb-1">
-                <FieldLabel htmlFor="perfectFor">Perfect For:</FieldLabel>
-                {perfectForList.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      type="text"
-                      value={item}
-                      onChange={(e) => {
-                        const updatedItems = [...perfectForList];
-                        updatedItems[index] = e.target.value;
-                        setPerfectForList(updatedItems);
-                      }}
-                    />
-                    {perfectForList.length > 1 && (
-                      <Button
-                        type="button"
-                        onClick={() => deletePerfectFor(index)}
-                        className="cursor-pointer hover:bg-red-700"
-                        variant="destructive"
-                      >
-                        x
-                      </Button>
-                    )}
+                  {/* Wrapper avoids Field’s [&>*]:w-full stretching the button full width */}
+                  <div className="flex w-full justify-start">
+                    <Button
+                      type="button"
+                      onClick={addKeyFeature}
+                      size="xs"
+                      aria-label="Add key feature"
+                      className="h-7 w-fit min-w-0 shrink-0 gap-0.5 border-0 bg-emerald-600 px-2 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 focus-visible:ring-emerald-500/40 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                    >
+                      <Plus className="size-3" />
+                      Add
+                    </Button>
                   </div>
-                ))}
+                </Field>
+
+                <Field className="flex flex-col gap-3">
+                  <FieldLabel>Perfect for</FieldLabel>
+                  <div className="flex flex-col gap-2">
+                    {perfectForList.map((item, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder={`Use case ${index + 1}`}
+                          value={item}
+                          onChange={(e) => {
+                            const updatedItems = [...perfectForList];
+                            updatedItems[index] = e.target.value;
+                            setPerfectForList(updatedItems);
+                          }}
+                          className="flex-1"
+                        />
+                        {perfectForList.length > 1 ? (
+                          <Button
+                            type="button"
+                            onClick={() => deletePerfectFor(index)}
+                            variant="ghost"
+                            size="icon-sm"
+                            className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            aria-label={`Remove use case ${index + 1}`}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        ) : (
+                          <div
+                            className="size-8 shrink-0 sm:size-9"
+                            aria-hidden
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex w-full justify-start">
+                    <Button
+                      type="button"
+                      onClick={addPerfectFor}
+                      size="xs"
+                      aria-label="Add use case"
+                      className="h-7 w-fit min-w-0 shrink-0 gap-0.5 border-0 bg-emerald-600 px-2 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 focus-visible:ring-emerald-500/40 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                    >
+                      <Plus className="size-3" />
+                      Add
+                    </Button>
+                  </div>
+                </Field>
+              </section>
+
+              <Separator />
+
+              <section className="space-y-4">
+                <div>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                    Compatibility table
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Optional. One row per line: Make, Model, Year, CCM,
+                    Submodel, Street name. Year ranges like 2015-2020 expand
+                    automatically.
+                  </p>
+                </div>
+                <Field className="flex flex-col gap-3">
+                  <FieldLabel htmlFor="compatibilityTable">
+                    Vehicle compatibility
+                  </FieldLabel>
+                  {!showCompatibilityTableForm ? (
+                    <Button
+                      type="button"
+                      onClick={() => setShowCompatibilityTableForm(true)}
+                      variant="outline"
+                      size="sm"
+                      className="w-fit gap-1.5"
+                    >
+                      <Plus className="size-4" />
+                      Add compatibility table
+                    </Button>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <FieldDescription className="sm:max-w-[85%]">
+                          Enter one vehicle per line, comma-separated fields.
+                        </FieldDescription>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={removeCompatibilityTable}
+                          className="w-fit shrink-0 gap-1.5 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                          Remove table
+                        </Button>
+                      </div>
+                      <Textarea
+                        id="compatibilityTable"
+                        rows={6}
+                        className="min-h-[140px] resize-y font-mono text-sm"
+                        {...register("compatibilityTable")}
+                        placeholder="Make, Model, Year, CCM, Submodel, Street Name"
+                      />
+                    </>
+                  )}
+                </Field>
+              </section>
+
+              <Separator />
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Output opens in a dialog. Use{" "}
+                  <span className="font-medium text-foreground">
+                    Copy to clipboard
+                  </span>{" "}
+                  to paste into eBay.
+                </p>
                 <Button
-                  type="button"
-                  onClick={addPerfectFor}
-                  className="bg-green-500 hover:bg-green-600 hover:cursor-pointer text-white"
-                  size="xs"
+                  type="submit"
+                  size="lg"
+                  className="w-full shrink-0 sm:w-auto sm:min-w-[180px]"
+                  disabled={loading}
                 >
-                  + Add More
+                  {loading ? "Generating…" : "Generate HTML"}
                 </Button>
-              </Field>
-
-              {/* Compatibility Table */}
-              <Field className="flex flex-col mb-5">
-                <FieldLabel htmlFor="compatibilityTable">
-                  Compatibility Table:
-                </FieldLabel>
-                <FieldDescription>
-                  Enter compatibility table data as Make, Model, Year, CCM,
-                  Submodel, Street Name
-                </FieldDescription>
-                <Textarea
-                  id="compatibilityTable"
-                  {...register("compatibilityTable")}
-                  placeholder="Make, Model, Year, CCM, Submodel, Street Name"
-                  required
-                />
-              </Field>
-
-              <Button type="submit" className="hover:cursor-pointer">
-                {loading ? "Generating..." : "Generate"}
-              </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
+
+        <footer className="mt-10 flex flex-col items-center gap-2 border-t border-border/60 pt-8 text-center text-xs text-muted-foreground">
+          <p>Part Hive · Internal listing tool</p>
+          <p>
+            © {new Date().getFullYear()} Part Hive. All rights reserved.
+          </p>
+          <p>
+            Developed by{" "}
+            <a
+              href="https://jimmendoza.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+            >
+              Jim Mendoza
+            </a>
+          </p>
+        </footer>
       </div>
 
       <AlertDialog
         open={showDialog}
         onOpenChange={(open) => setShowDialog(open)}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Generated HTML Snippet</AlertDialogTitle>
+        <AlertDialogContent className="flex max-h-[min(90vh,800px)] w-full max-w-[min(100vw-2rem,48rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+          <AlertDialogHeader className="flex shrink-0 flex-col items-stretch gap-2 border-b border-border px-6 py-4 text-left sm:place-items-start">
+            <AlertDialogTitle className="text-lg">
+              Generated HTML snippet
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <p className="text-sm text-muted-foreground">
+                Copy this HTML into your eBay item description editor.
+              </p>
+            </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogDescription>
-            <div className="overflow-auto p-4">
-              <ScrollArea className="w-100 max-h-[60vh]">
-                <pre className="whitespace-pre-wrap bg-gray-100 p-4">
-                  {generateHTMLSnippet()}
-                </pre>
-              </ScrollArea>
-            </div>
-          </AlertDialogDescription>
-          <AlertDialogFooter>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6">
+            <pre className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 font-mono text-[11px] leading-relaxed text-foreground sm:text-xs">
+              {generateHTMLSnippet()}
+            </pre>
+          </div>
+          <AlertDialogFooter className="shrink-0 flex-col-reverse gap-2 border-t border-border bg-muted/20 px-6 py-4 sm:flex-row sm:justify-end">
             <AlertDialogCancel>Close</AlertDialogCancel>
             <AlertDialogAction onClick={copyToClipboard}>
-              Copy to Clipboard
+              Copy to clipboard
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </main>
   );
 }

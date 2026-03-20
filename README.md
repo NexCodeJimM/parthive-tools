@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Access control (sign-in)
+
+The app is protected by **username + password**. Unauthenticated visitors are redirected to `/login`. (Auth runs in the root **`proxy.ts`** file — Next.js 16’s replacement for the old `middleware.ts` convention.)
+
+1. Copy `.env.example` to `.env.local`.
+2. Set **`AUTH_USERNAME`**, **`AUTH_PASSWORD`**, and **`AUTH_SECRET`** (at least 32 characters; use a long random string).
+3. Restart the dev server.
+
+Sessions use an **httpOnly** cookie signed with **`AUTH_SECRET`**. Use **HTTPS** in production, keep secrets out of git, and prefer **long random passwords**. For stronger guarantees, add network controls (VPN, IP allowlist, Vercel/Cloudflare access policies) on top of this.
+
 ## Getting Started
 
 First, run the development server:
