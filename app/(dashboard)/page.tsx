@@ -839,7 +839,7 @@ ${compatibilityTableSection}
   };
 
   return (
-    <main className="min-h-[calc(100vh-3.5rem)] bg-linear-to-b from-muted/50 via-background to-background">
+    <main className="min-h-[calc(100vh-3.5rem)] flex-1 bg-linear-to-b from-muted/50 via-background to-background">
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
         <Card className="border-border/80 shadow-md shadow-black/5 dark:shadow-black/20">
           <CardHeader className="space-y-2 border-b border-border/60 pb-6">
@@ -1088,23 +1088,6 @@ ${compatibilityTableSection}
           </CardContent>
         </Card>
 
-        <footer className="mt-10 flex flex-col items-center gap-2 border-t border-border/60 pt-8 text-center text-xs text-muted-foreground">
-          <p>Part Hive · Internal listing tool</p>
-          <p>
-            © {new Date().getFullYear()} Part Hive. All rights reserved.
-          </p>
-          <p>
-            Developed by{" "}
-            <a
-              href="https://jimmendoza.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
-            >
-              Jim Mendoza
-            </a>
-          </p>
-        </footer>
       </div>
 
       <AlertDialog

@@ -60,7 +60,7 @@ export function LoginForm({ redirectTo }: Props) {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-linear-to-b from-muted/50 via-background to-background px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-linear-to-b from-muted/50 via-background to-background px-4 py-12">
       <Card className="w-full max-w-md border-border/80 shadow-md">
         <CardHeader className="space-y-1 border-b border-border/60 pb-4">
           <CardTitle className="text-xl tracking-tight">Sign in</CardTitle>

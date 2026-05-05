@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SiteHeader } from "@/components/site-header";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -15,8 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "eBay Product Description Generator - Part Hive",
-  description: "This is a custom tool created for Part Hive",
+  title: {
+    default: "Part Hive Tools",
+    template: "%s · Part Hive Tools",
+  },
+  description: "Internal tools for Part Hive — eBay listings, Shopify product lookup, and more.",
+  icons: {
+    icon: [{ url: "/Favicon-180.ico", sizes: "180x180", type: "image/x-icon" }],
+  },
 };
 
 export default function RootLayout({
@@ -29,10 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
       >
-        <Providers>
-          <SiteHeader />
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
