@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  fetchShopifyTabCsv,
-  parseShopifyTabRows,
-  searchShopifyTabRows,
-} from "@/lib/shopify/shopify-product-sheet";
+import { searchShopifyTabWithProductFeatures } from "@/lib/shopify/shopify-product-sheet";
 
 export async function GET(request: Request) {
   const q = new URL(request.url).searchParams.get("q")?.trim() ?? "";
@@ -16,9 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const csv = await fetchShopifyTabCsv("pcx125");
-    const rows = parseShopifyTabRows(csv, "pcx125");
-    const matches = searchShopifyTabRows(rows, q);
+    const matches = await searchShopifyTabWithProductFeatures("pcx125", q);
     return NextResponse.json({ matches });
   } catch {
     return NextResponse.json(

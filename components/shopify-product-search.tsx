@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import {
 } from "@/lib/shopify/format-developer-instructions-copy";
 import {
   getCell,
+  getFieldDisplayLabel,
   rowEntriesForDisplay,
   shopifyTabSearchApiPath,
   type ShopifyProductTabId,
@@ -28,6 +30,97 @@ import { toast } from "sonner";
 type MatchRow = Record<string, string>;
 
 const SEARCH_HISTORY_MAX = 5;
+
+const HIDDEN_RESULT_FIELDS = new Set(
+  [
+    "Category Pages",
+    "Part Name",
+    "Alternative Part Number",
+    "—",
+    "CCM",
+    "Internal Cross selling",
+    "Keyword used",
+    "Street Name",
+    "Tags",
+    "Target Hub",
+    "Type",
+    "With Copy",
+    "Year",
+  ].map((x) => x.trim().toLowerCase()),
+);
+
+function shouldHideResultFieldLabel(label: string): boolean {
+  return HIDDEN_RESULT_FIELDS.has(label.trim().toLowerCase());
+}
+
+/** Appended to sheet value when copying / displaying Product Compatibility (only if cell has content). */
+const PRODUCT_COMPATIBILITY_DEFAULT_FOOTER = `Compatibility charts are for reference only. Please compare part numbers and
+manufacturers' details. Contact us before ordering if unsure to avoid delays or refund
+charges.
+
+Trademark Disclaimer: All trademarks, brand names, and logos remain the property of their respective owners and are used solely for identification and compatibility purposes.
+We are an independent retailer and are not affiliated with any authorized dealer or
+distributor.`;
+
+/** Sheet sometimes uses "Compatability" (common misspelling). */
+function isProductCompatibilityField(label: string): boolean {
+  const n = label
+    .trim()
+    .toLowerCase()
+    .replaceAll("compatability", "compatibility");
+  return n === "product compatibility";
+}
+
+/** Sheet text plus footer; returns "" if the product cell is empty. */
+function productCompatibilityDisplayValue(raw: string): string {
+  const body = raw.trim();
+  if (!body) return "";
+  return `${body}\n\n${PRODUCT_COMPATIBILITY_DEFAULT_FOOTER}`;
+}
+
+const CLIPBOARD_BULLET = "\u2022";
+
+function isBulletListField(label: string): boolean {
+  const n = label.trim().toLowerCase();
+  return n === "key features" || n === "perfect for";
+}
+
+/** Strip common leading markers so list items dedupe with UI bullets. */
+function stripLeadingBulletMarker(line: string): string {
+  let s = line.trim();
+  s = s.replace(/^[•\u2022\u25cf▪·]\s*/i, "");
+  s = s.replace(/^[-*]\s+/, "");
+  s = s.replace(/^\d+[.)]\s+/, "");
+  return s.trim();
+}
+
+/** Split cell text into feature lines (newline-separated; trims bullet/number prefixes per line). */
+function splitIntoListItems(raw: string): string[] {
+  const t = raw.trim();
+  if (!t) return [];
+  const lines = t
+    .split(/\r?\n+/)
+    .map((s) => stripLeadingBulletMarker(s))
+    .filter(Boolean);
+  if (lines.length > 0) return lines;
+  return [stripLeadingBulletMarker(t)];
+}
+
+function bulletListClipboardText(items: string[]): string {
+  return items.map((item) => `${CLIPBOARD_BULLET} ${item}`).join("\n");
+}
+
+function clipboardPayloadForField(label: string, value: string): string {
+  if (isProductCompatibilityField(label)) {
+    return productCompatibilityDisplayValue(value);
+  }
+  if (isBulletListField(label)) {
+    const items = splitIntoListItems(value);
+    if (items.length === 0) return "";
+    return bulletListClipboardText(items);
+  }
+  return value;
+}
 
 function loadSearchHistory(storageKey: string): string[] {
   try {
@@ -53,7 +146,11 @@ function persistSearchHistory(storageKey: string, entries: string[]) {
   }
 }
 
-function copyFieldToClipboard(fieldLabel: string, text: string) {
+function copyFieldToClipboard(
+  fieldLabel: string,
+  text: string,
+  toastLabel?: string,
+) {
   const trimmed = text.trim();
   if (!trimmed) return;
 
@@ -63,9 +160,11 @@ function copyFieldToClipboard(fieldLabel: string, text: string) {
 
   if (!payload.trim()) return;
 
+  const successLabel = toastLabel ?? fieldLabel;
+
   void navigator.clipboard.writeText(payload).then(
     () => {
-      toast.success(`Copied to ${fieldLabel}`, {
+      toast.success(`Copied to ${successLabel}`, {
         position: "bottom-right",
         icon: (
           <CircleCheckIcon className="size-5 shrink-0 text-white" aria-hidden />
@@ -94,10 +193,16 @@ export function ShopifyProductSearch({
   panelTitle,
   historyStorageKey,
 }: ShopifyProductSearchProps) {
+  const router = useRouter();
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  const urlQuery = (searchParams.get("q") ?? "").trim();
+
   const [query, setQuery] = useState("");
   const [matches, setMatches] = useState<MatchRow[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const searchBlockRef = useRef<HTMLDivElement>(null);
@@ -123,26 +228,33 @@ export function ShopifyProductSearch({
     [historyStorageKey],
   );
 
-  const executeSearch = useCallback(
-    async (rawQuery: string) => {
-      const q = rawQuery.trim();
-      setQuery(q);
-      if (!q) {
-        setError("Enter a Variant SKU or Part Number.");
-        setMatches(null);
-        return;
-      }
+  useEffect(() => {
+    setQuery(urlQuery);
 
-      setLoading(true);
+    if (!urlQuery) {
+      setMatches(null);
       setError(null);
-      setHistoryOpen(false);
+      setLoading(false);
+      return;
+    }
+
+    setValidationError(null);
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setHistoryOpen(false);
+
+    void (async () => {
       try {
         const api = shopifyTabSearchApiPath(tabId);
-        const res = await fetch(`${api}?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`${api}?q=${encodeURIComponent(urlQuery)}`);
         const data = (await res.json()) as {
           matches?: MatchRow[];
           error?: string;
         };
+
+        if (cancelled) return;
 
         if (!res.ok) {
           setError(data.error ?? "Search failed.");
@@ -150,21 +262,52 @@ export function ShopifyProductSearch({
           return;
         }
 
-        appendSearchHistory(q);
+        appendSearchHistory(urlQuery);
         setMatches(data.matches ?? []);
       } catch {
-        setError("Network error. Try again.");
-        setMatches(null);
+        if (!cancelled) {
+          setError("Network error. Try again.");
+          setMatches(null);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appendSearchHistory, tabId, urlQuery]);
+
+  const commitSearchToUrl = useCallback(() => {
+    const q = query.trim();
+    if (!q) {
+      setValidationError("Enter a Variant SKU.");
+      router.replace(pathname, { scroll: false });
+      return;
+    }
+    setValidationError(null);
+    setError(null);
+    router.replace(`${pathname}?q=${encodeURIComponent(q)}`, {
+      scroll: false,
+    });
+  }, [query, router, pathname]);
+
+  const applyHistorySearch = useCallback(
+    (raw: string) => {
+      const q = raw.trim();
+      if (!q) return;
+      setValidationError(null);
+      setError(null);
+      setHistoryOpen(false);
+      router.replace(`${pathname}?q=${encodeURIComponent(q)}`, {
+        scroll: false,
+      });
     },
-    [appendSearchHistory, tabId],
+    [router, pathname],
   );
 
-  const runSearch = useCallback(() => {
-    void executeSearch(query);
-  }, [executeSearch, query]);
+  const combinedError = validationError ?? error;
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
@@ -174,14 +317,13 @@ export function ShopifyProductSearch({
             {panelTitle}
           </CardTitle>
           <CardDescription className="text-pretty">
-            Search by <span className="font-medium text-foreground">Variant SKU</span>{" "}
-            or <span className="font-medium text-foreground">Part Number</span>.
+            Search by <span className="font-medium text-foreground">Variant SKU</span>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-5">
           <div className="flex w-full min-w-0 flex-col gap-3">
             <Label htmlFor={searchInputId} className="w-full text-sm font-medium">
-              Variant SKU or Part Number
+              Variant SKU
             </Label>
             <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
               <div
@@ -210,9 +352,9 @@ export function ShopifyProductSearch({
                       setHistoryOpen(false);
                       return;
                     }
-                    if (e.key === "Enter") void executeSearch(query);
+                    if (e.key === "Enter") commitSearchToUrl();
                   }}
-                  placeholder="e.g. FLTGY2DP44510000 or 2DP-E4451-00"
+                  placeholder="e.g. FLTGY2DP44510000"
                   autoComplete="off"
                   disabled={loading}
                   className="h-10 w-full min-w-0 pr-10"
@@ -248,7 +390,7 @@ export function ShopifyProductSearch({
                           className="flex w-full items-center truncate px-3 py-2.5 text-left text-sm hover:bg-muted"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            void executeSearch(item);
+                            applyHistorySearch(item);
                           }}
                         >
                           {item}
@@ -261,7 +403,7 @@ export function ShopifyProductSearch({
               <Button
                 type="button"
                 className="h-10 w-full shrink-0 gap-2 sm:w-auto sm:min-w-32"
-                onClick={() => void runSearch()}
+                onClick={() => commitSearchToUrl()}
                 disabled={loading}
               >
                 <Search className="size-4 shrink-0" aria-hidden />
@@ -270,9 +412,9 @@ export function ShopifyProductSearch({
             </div>
           </div>
 
-          {error ? (
+          {combinedError ? (
             <p className="text-sm text-destructive" role="alert">
-              {error}
+              {combinedError}
             </p>
           ) : null}
         </CardContent>
@@ -303,32 +445,76 @@ export function ShopifyProductSearch({
               </CardHeader>
               <CardContent className="p-0">
                 <dl className="divide-y divide-border/80">
-                  {rowEntriesForDisplay(row, tabId).map(([label, value]) => (
+                  {rowEntriesForDisplay(row, tabId)
+                    .filter(([label]) => !shouldHideResultFieldLabel(label))
+                    .map(([label, value]) => {
+                      const displayLabel = getFieldDisplayLabel(label);
+                      const bulletItems = isBulletListField(label)
+                        ? splitIntoListItems(value)
+                        : [];
+                      const showBulletList = bulletItems.length > 0;
+
+                      const compatShown = isProductCompatibilityField(label)
+                        ? productCompatibilityDisplayValue(value)
+                        : "";
+
+                      const plainShown =
+                        !showBulletList && !compatShown
+                          ? value || "—"
+                          : null;
+
+                      return (
                     <div
                       key={label}
                       className="grid gap-2 px-4 py-3 sm:grid-cols-[minmax(10rem,14rem)_1fr] sm:items-start sm:gap-4 sm:py-3.5"
                     >
                       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground sm:text-sm sm:normal-case sm:tracking-normal">
-                        {label}
+                        {displayLabel}
                       </dt>
                       <dd className="flex min-w-0 items-start gap-2">
-                        <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm text-foreground">
-                          {value || "—"}
-                        </span>
+                        <div className="min-w-0 flex-1 text-sm text-foreground">
+                          {showBulletList ? (
+                            <ul className="list-disc space-y-1.5 pl-5">
+                              {bulletItems.map((item, i) => (
+                                <li
+                                  key={`${label}-${i}-${item.slice(0, 24)}`}
+                                  className="whitespace-pre-wrap break-words"
+                                >
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : compatShown ? (
+                            <span className="block whitespace-pre-wrap break-words">
+                              {compatShown}
+                            </span>
+                          ) : (
+                            <span className="block whitespace-pre-wrap break-words">
+                              {plainShown}
+                            </span>
+                          )}
+                        </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon-sm"
                           className="shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                           disabled={!value.trim()}
-                          aria-label={`Copy ${label}`}
-                          onClick={() => copyFieldToClipboard(label, value)}
+                          aria-label={`Copy ${displayLabel}`}
+                          onClick={() =>
+                            copyFieldToClipboard(
+                              label,
+                              clipboardPayloadForField(label, value),
+                              displayLabel,
+                            )
+                          }
                         >
                           <Copy className="size-4" aria-hidden />
                         </Button>
                       </dd>
                     </div>
-                  ))}
+                      );
+                    })}
                 </dl>
               </CardContent>
             </Card>
