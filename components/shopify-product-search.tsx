@@ -36,6 +36,7 @@ const HIDDEN_RESULT_FIELDS = new Set(
     "Category Pages",
     "Part Name",
     "Alternative Part Number",
+    "Core Bullet Points",
     "—",
     "CCM",
     "Internal Cross selling",
